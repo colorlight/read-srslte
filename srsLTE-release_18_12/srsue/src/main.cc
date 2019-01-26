@@ -560,6 +560,7 @@ int main(int argc, char* argv[])
   while (!ue->switch_on() && running) {
     sleep(1);
   }
+  // the enb.conf.example explain that pregenerate signals are used to improve CPU performance 
   if (running) {
     if (args.expert.pregenerate_signals) {
       printf("Pre-generating signals...\n");

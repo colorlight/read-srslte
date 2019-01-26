@@ -192,22 +192,32 @@ phy_interface_rrc::cell_search_ret_t phch_recv::cell_search(phy_interface_rrc::p
   ret.found     = phy_interface_rrc::cell_search_ret_t::ERROR;
   ret.last_freq = phy_interface_rrc::cell_search_ret_t::NO_MORE_FREQS;
 
+// 这个地方加了一个锁，还不太清楚加锁的目的，可能有多个地方都用到了接收到 数据?
   pthread_mutex_lock(&rrc_mutex);
 
   // Move state to IDLE
   Info("Cell Search: Start EARFCN index=%u/%zd\n", cellsearch_earfcn_index, earfcn.size());
+
   phy_state.go_idle();
 
+	//这个地方大概是根据一定的存储的频率信息进行扫频
   if (current_earfcn != (int) earfcn[cellsearch_earfcn_index]) {
     current_earfcn = (int) earfcn[cellsearch_earfcn_index];
     Info("Cell Search: changing frequency to EARFCN=%d\n", current_earfcn);
+	//这个显然就是向sdr设置current_earfcn
     set_frequency();
   }
 
   // Move to CELL SEARCH and wait to finish
+  //读到这里，我觉着已经大概知道这个函数的工作原理了，下面的phy_state.run_cell_search()会使该函数阻塞
+  //因为里面有个wait_state_change，这个显然是在等待一个条件，而这个条件显然是由外部的某个函数，实际上就是
+  //run thread里面可以修改的一个状态，等他完成了搜索之后才会到后面的switch语句
+  //而这个函数本事，他是不做小区搜索的，脏活累活实际上都是被run_thread里面的函数做了，他只负责获取结果，并且
+  //设置一些参数。
   Info("Cell Search: Setting Cell search state\n");
   phy_state.run_cell_search();
 
+  
   // Check return state
   switch(cell_search_ret) {
     case search::CELL_FOUND:
@@ -349,7 +359,7 @@ bool phch_recv::cell_is_camping() {
  * MAIN THREAD
  * 
  * The main thread process the SYNC state machine. Every state except IDLE must have exclusive access to
- * all variables. If any change of cell configuration must be done, the thread must be in IDLE.
+ * all variables. If any change of cell configuration must be done, the thread must be in IDLE.这个可以在cell search中的设置频率看出来
  *
  * On each state except campling, 1 function is called and the thread jumps to the next state based on the output.
  *
