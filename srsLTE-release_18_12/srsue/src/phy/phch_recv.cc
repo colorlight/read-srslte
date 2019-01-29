@@ -215,6 +215,7 @@ phy_interface_rrc::cell_search_ret_t phch_recv::cell_search(phy_interface_rrc::p
   //而这个函数本事，他是不做小区搜索的，脏活累活实际上都是被run_thread里面的函数做了，他只负责获取结果，并且
   //设置一些参数。
   Info("Cell Search: Setting Cell search state\n");
+  // 这句话就是在监听状态，一旦状态改变就开始进入后续的流程
   phy_state.run_cell_search();
 
   
